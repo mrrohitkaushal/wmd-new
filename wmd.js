@@ -1661,7 +1661,7 @@ Attacklab.wmdBase = function(){
             inner = inner.replace(regex, getLink);
 			if (defsToAdd[id]) {
 				addDefNumber(defsToAdd[id]);
-                return "[" + inner + afterInner + refNumber + end;
+                return before + inner + afterInner + refNumber + end;
 				
 			}
 			return wholeMatch;

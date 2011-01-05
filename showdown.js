@@ -76,6 +76,23 @@ Attacklab.showdown = Attacklab.showdown || {}
 //
 Attacklab.showdown.converter = function() {
 
+
+// g_urls and g_titles allow arbitrary user-entered strings as keys. This
+// caused an exception (and hence stopped the rendering) when the user entered
+// e.g. [push] or [__proto__]. Adding a prefix to the actual key prevents this
+// (since no builtin property starts with "s_"). See
+// http://meta.stackoverflow.com/questions/64655/strange-wmd-bug
+// (granted, switching from Array() to Object() alone would have left only __proto__
+// to be a problem)
+var SaveHash = function () {
+    this.set = function (key, value) {
+        this["s_" + key] = value;
+    }
+    this.get = function (key) {
+        return this["s_" + key];
+    }
+}
+
 //
 // Globals:
 //
@@ -102,8 +119,8 @@ this.makeHtml = function(text) {
 	// from other articles when generating a page which contains more than
 	// one article (e.g. an index page that shows the N most recent
 	// articles):
-	g_urls = new Array();
-	g_titles = new Array();
+    g_urls = new SaveHash();
+    g_titles = new SaveHash();
 	g_html_blocks = new Array();
 
 	// attacklab: Replace ~ with ~T
@@ -184,13 +201,13 @@ var _StripLinkDefinitions = function(text) {
 	var text = text.replace(/^[ ]{0,3}\[(.+)\]:[ \t]*\n?[ \t]*<?(\S+?)>?[ \t]*\n?[ \t]*(?:(\n*)["(](.+?)[")][ \t]*)?(?:\n+)/gm,
 		function (wholeMatch,m1,m2,m3,m4) {
 			m1 = m1.toLowerCase();
-			g_urls[m1] = _EncodeAmpsAndAngles(m2);  // Link IDs are case-insensitive
+			g_urls.set(m1, _EncodeAmpsAndAngles(m2));  // Link IDs are case-insensitive
 			if (m3) {
 				// Oops, found blank lines, so it's not a title.
 				// Put back the parenthetical statement we stole.
 				return m3+m4;
 			} else if (m4) {
-				g_titles[m1] = m4.replace(/"/g,"&quot;");
+				g_titles.set(m1, m4.replace(/"/g,"&quot;"));
 			}
 			
 			// Completely remove the definition from the text
@@ -516,10 +533,10 @@ var writeAnchorTag = function(wholeMatch,m1,m2,m3,m4,m5,m6,m7) {
 		}
 		url = "#"+link_id;
 		
-		if (g_urls[link_id] != undefined) {
-			url = g_urls[link_id];
-			if (g_titles[link_id] != undefined) {
-				title = g_titles[link_id];
+		if (g_urls.get(link_id) != undefined) {
+			url = g_urls.get(link_id);
+			if (g_titles.get(link_id) != undefined) {
+				title = g_titles.get(link_id);
 			}
 		}
 		else {
@@ -621,10 +638,10 @@ var writeImageTag = function(wholeMatch,m1,m2,m3,m4,m5,m6,m7) {
 		}
 		url = "#"+link_id;
 		
-		if (g_urls[link_id] != undefined) {
-			url = g_urls[link_id];
-			if (g_titles[link_id] != undefined) {
-				title = g_titles[link_id];
+		if (g_urls.get(link_id) != undefined) {
+			url = g_urls.get(link_id);
+			if (g_titles.get(link_id) != undefined) {
+				title = g_titles.get(link_id);
 			}
 		}
 		else {

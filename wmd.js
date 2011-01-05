@@ -1642,7 +1642,9 @@ Attacklab.wmdBase = function(){
 		chunk.after = command.stripLinkDefs(chunk.after, defsToAdd);
 		
 		var defs = "";
-		var regex = /(\[(?:\[[^\]]*\]|[^\[\]])*\][ ]?(?:\n[ ]*)?\[)(\d+)(\])/g;
+		var regex = /(\[)((?:\[[^\]]*\]|[^\[\]])*)(\][ ]?(?:\n[ ]*)?\[)(\d+)(\])/g;
+        
+        
 		
 		var addDefNumber = function(def){
 			refNumber++;
@@ -1650,11 +1652,16 @@ Attacklab.wmdBase = function(){
 			defs += "\n" + def;
 		};
 		
-		var getLink = function(wholeMatch, link, id, end){
-		
+        // note that
+        // a) the recursive call to getLink cannot go infinite, because by definition
+        //    of regex, inner is always a proper substring of wholeMatch, and
+        // b) more than one level of nesting is neither supported by the regex
+        //    nor making a lot of sense (the only use case for nesting is a linked image)
+        var getLink = function (wholeMatch, before, inner, afterInner, id, end) {
+            inner = inner.replace(regex, getLink);
 			if (defsToAdd[id]) {
 				addDefNumber(defsToAdd[id]);
-				return link + refNumber + end;
+                return "[" + inner + afterInner + refNumber + end;
 				
 			}
 			return wholeMatch;

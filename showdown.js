@@ -756,7 +756,7 @@ var _DoLists = function(text) {
 			// Turn double returns into triple returns, so that we can make a
 			// paragraph for the last item in a list, if necessary:
 			list = list.replace(/\n{2,}/g,"\n\n\n");;
-			var result = _ProcessListItems(list);
+			var result = _ProcessListItems(list, list_type);
 	
 			// Trim any trailing whitespace, to put the closing `</$list_type>`
 			// up on the preceding line, to get it past the current stupid
@@ -776,7 +776,7 @@ var _DoLists = function(text) {
 			// Turn double returns into triple returns, so that we can make a
 			// paragraph for the last item in a list, if necessary:
 			var list = list.replace(/\n{2,}/g,"\n\n\n");;
-			var result = _ProcessListItems(list);
+			var result = _ProcessListItems(list, list_type);
 			result = runup + "<"+list_type+">\n" + result + "</"+list_type+">\n";	
 			return result;
 		});
@@ -788,11 +788,15 @@ var _DoLists = function(text) {
 	return text;
 }
 
-_ProcessListItems = function(list_str) {
+_listItemMarkers = { ol: "\\d+[.]", ul: "[*+-]" };
+
+_ProcessListItems = function(list_str, list_type) {
 //
 //  Process the contents of a single ordered or unordered list, splitting it
 //  into individual list items.
 //
+//  list_type is either "ul" or "ol".
+
 	// The $g_list_level global keeps track of when we're inside a list.
 	// Each time we enter a list, we increment it; when we leave a list,
 	// we decrement. If it's zero, we're not in a list anymore.
@@ -822,17 +826,32 @@ _ProcessListItems = function(list_str) {
 	// attacklab: add sentinel to emulate \z
 	list_str += "~0";
 
+	// In the original attacklab WMD, list_type was not given to this function, and anything
+	// that matched /[*+-]|\d+[.]/ would just create the next <li>, causing this mismatch:
+	//
+    //  Markdown          rendered by WMD        rendered by MarkdownSharp
+	//  ------------------------------------------------------------------
+	//  1. first          1. first               1. first
+	//  2. second         2. second              2. second
+	//  - third           3. third                   * third
+	//
+	// We changed this to behave identical to MarkdownSharp. This is the constructed RegEx,
+    // with {MARKER} being one of \d+[.] or [*+-], depending on list_type:
 	/*
 		list_str = list_str.replace(/
 			(\n)?							// leading line = $1
 			(^[ \t]*)						// leading whitespace = $2
-			([*+-]|\d+[.]) [ \t]+			// list marker = $3
+			({MARKER}) [ \t]+   			// list marker = $3
 			([^\r]+?						// list item text   = $4
 			(\n{1,2}))
-			(?= \n* (~0 | \2 ([*+-]|\d+[.]) [ \t]+))
+			(?= \n* (~0 | \2 ({MARKER}) [ \t]+))
 		/gm, function(){...});
 	*/
-	list_str = list_str.replace(/(\n)?(^[ \t]*)([*+-]|\d+[.])[ \t]+([^\r]+?(\n{1,2}))(?=\n*(~0|\2([*+-]|\d+[.])[ \t]+))/gm,
+    
+    var marker = _listItemMarkers[list_type];
+    var re = new RegExp("(\\n)?(^[ \\t]*)(" + marker + ")[ \\t]+([^\\r]+?(\\n{1,2}))(?=\\n*(~0|\\2(" + marker + ")[ \\t]+))", "gm");
+
+	list_str = list_str.replace(re,
 		function(wholeMatch,m1,m2,m3,m4){
 			var item = m4;
 			var leading_line = m1;

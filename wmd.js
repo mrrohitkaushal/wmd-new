@@ -2037,19 +2037,74 @@ Attacklab.wmdBase = function(){
 		chunk.selection = chunk.selection.replace(/^(\s|>)+$/ ,"");
 		chunk.selection = chunk.selection || defaultText;
 		
+        // The original code uses a regular expression to find out how much of the
+        // text *directly before* the selection already was a blockquote:
+        /*
 		if(chunk.before){
 			chunk.before = chunk.before.replace(/\n?$/,"\n");
 		}
+        chunk.before = chunk.before.replace(/(((\n|^)(\n[ \t]*)*>(.+\n)*.*)+(\n[ \t]*)*$)/,
+                       function (totalMatch) {
+                           chunk.startTag = totalMatch;
+                           return "";
+                       });
+        */
+        // This comes down to:
+        // Go backwards as many lines a possible, such that each line
+        //  a) starts with ">", or
+        //  b) is almost empty, except for whitespace, or
+        //  c) is preceeded by an unbroken chain of non-empty lines
+        //     leading up to a line that starts with ">" and at least one more character
+        // and in addition
+        //  d) at least one line fulfills a)
+        //
+        // Since this is essentially a backwards-moving regex, it's susceptible to
+        // catstrophic backtracking and can cause the browser to hang;
+        // see e.g. http://meta.stackoverflow.com/questions/9807.
+        //
+        // Hence we replaced this by a simple state machine that just goes through the
+        // lines and checks for a), b), and c).
+
+        var match = "";
+        var leftOver = "";
+        if (chunk.before) {
+            var lines = chunk.before.replace(/\n$/, "").split("\n");
+            var inChain = false;
+            for (var i in lines) {
+                var good = false;
+                line = lines[i];
+                inChain = inChain && line.length > 0; // c) any non-empty line continues the chain
+                if (/^>/.test(line)) {                // a)
+                    good = true;
+                    if (!inChain && line.length > 1)  // c) any line that starts with ">" and has at least one more character starts the chain
+                        inChain = true;
+                } else if (/^[ \t]*$/.test(line)) {   // b)
+                    good = true;
+                } else {
+                    good = inChain;                   // c) the line is not empty and does not start with ">", so it matches if and only if we're in the chain
+                }
+                if (good) {
+                    match += line + "\n";
+                } else {
+                    leftOver += match + line;
+                    match = "\n";
+                }
+            }
+            if (!/(^|\n)>/.test(match)) {             // d)
+                leftOver += match;
+                match = "";
+            }
+        }
+
+        chunk.startTag = match;
+        chunk.before = leftOver;
+
+        // end of change
+        
 		if(chunk.after){
 			chunk.after = chunk.after.replace(/^\n?/,"\n");
 		}
 		
-		chunk.before = chunk.before.replace(/(((\n|^)(\n[ \t]*)*>(.+\n)*.*)+(\n[ \t]*)*$)/,
-			function(totalMatch){
-				chunk.startTag = totalMatch;
-				return "";
-			});
-			
 		chunk.after = chunk.after.replace(/^(((\n|^)(\n[ \t]*)*>(.+\n)*.*)+(\n[ \t]*)*)/,
 			function(totalMatch){
 				chunk.endTag = totalMatch;

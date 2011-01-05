@@ -788,7 +788,7 @@ var _DoLists = function(text) {
 	return text;
 }
 
-_listItemMarkers = { ol: "\\d+[.]", ul: "[*+-]" };
+var _listItemMarkers = { ol: "\\d+[.]", ul: "[*+-]" };
 
 _ProcessListItems = function(list_str, list_type) {
 //

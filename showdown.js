@@ -187,10 +187,10 @@ var _StripLinkDefinitions = function(text) {
 				  [ \t]*
 				  \n?				// maybe one newline
 				  [ \t]*
-				(?:
-				  (\n*)				// any lines skipped = $3 attacklab: lookbehind removed
+				(                   // (potential) title = $3
+				  (\n*)				// any lines skipped = $4 attacklab: lookbehind removed
 				  ["(]
-				  (.+?)				// title = $4
+				  (.+?)				// title = $5
 				  [")]
 				  [ \t]*
 				)?					// title is optional
@@ -198,16 +198,16 @@ var _StripLinkDefinitions = function(text) {
 			  /gm,
 			  function(){...});
 	*/
-	var text = text.replace(/^[ ]{0,3}\[(.+)\]:[ \t]*\n?[ \t]*<?(\S+?)>?[ \t]*\n?[ \t]*(?:(\n*)["(](.+?)[")][ \t]*)?(?:\n+)/gm,
-		function (wholeMatch,m1,m2,m3,m4) {
+	var text = text.replace(/^[ ]{0,3}\[(.+)\]:[ \t]*\n?[ \t]*<?(\S+?)>?[ \t]*\n?[ \t]*((\n*)["(](.+?)[")][ \t]*)?(?:\n+)/gm,
+		function (wholeMatch,m1,m2,m3,m4,m5) {
 			m1 = m1.toLowerCase();
 			g_urls.set(m1, _EncodeAmpsAndAngles(m2));  // Link IDs are case-insensitive
-			if (m3) {
+			if (m4) {
 				// Oops, found blank lines, so it's not a title.
 				// Put back the parenthetical statement we stole.
-				return m3+m4;
-			} else if (m4) {
-				g_titles.set(m1, m4.replace(/"/g,"&quot;"));
+				return m3;
+			} else if (m5) {
+				g_titles.set(m1, m5.replace(/"/g,"&quot;"));
 			}
 			
 			// Completely remove the definition from the text

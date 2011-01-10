@@ -471,15 +471,15 @@ var _DoAnchors = function(text) {
 
 	/*
 		text = text.replace(/
-			(						// wrap whole match in $1
-				\[
+		(   						// wrap whole match in $1
+			\[
 				(
 					(?:
 						\[[^\]]*\]	// allow brackets nested one level
-					|
-					[^\[\]]			// or anything else
-				)
-			)
+					    |
+					    [^\[\]]		// or anything else
+				    )*
+			    )
 			\]
 			\(						// literal paren
 			[ \t]*

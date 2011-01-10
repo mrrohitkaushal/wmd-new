@@ -360,7 +360,7 @@ var hashElement = function(wholeMatch,m1) {
 	return blockText;
 };
 
-var _RunBlockGamut = function(text) {
+var _RunBlockGamut = function(text, doNotUnhash) {
 //
 // These are all the transformations that form block-level
 // tags like paragraphs, headers, and list items.
@@ -382,7 +382,7 @@ var _RunBlockGamut = function(text) {
 	// we're escaping the markup we've just created, so that we don't wrap
 	// <p> tags around block-level tags.
 	text = _HashHTMLBlocks(text);
-	text = _FormParagraphs(text);
+    text = _FormParagraphs(text, doNotUnhash);
 
 	return text;
 }
@@ -859,9 +859,9 @@ _ProcessListItems = function(list_str, list_type) {
 			var leading_space = m1;
             var ends_with_double_newline = /\n\n$/.test(item);
 			var contains_double_newline = ends_with_double_newline || item.search(/\n{2,}/)>-1;
-            
+
 			if (contains_double_newline || last_item_had_a_double_newline) {
-				item = _RunBlockGamut(_Outdent(item));
+				item =  _RunBlockGamut(_Outdent(item), /* doNotUnhash = */ true);
 			}
 			else {
 				// Recursion for sub-lists:
@@ -1075,7 +1075,7 @@ var _DoBlockQuotes = function(text) {
 }
 
 
-var _FormParagraphs = function(text) {
+var _FormParagraphs = function(text, doNotUnhash) {
 //
 //  Params:
 //    $text - string to process with html <p> tags
@@ -1107,20 +1107,20 @@ var _FormParagraphs = function(text) {
 		}
 
 	}
-
 	//
 	// Unhashify HTML blocks
 	//
-	end = grafsOut.length;
-	for (var i=0; i<end; i++) {
-		// if this is a marker for an html block...
-		while (grafsOut[i].search(/~K(\d+)K/) >= 0) {
-			var blockText = g_html_blocks[RegExp.$1];
-			blockText = blockText.replace(/\$/g,"$$$$"); // Escape any dollar signs
-			grafsOut[i] = grafsOut[i].replace(/~K\d+K/,blockText);
-		}
-	}
-
+    if (!doNotUnhash) {
+        end = grafsOut.length;
+	    for (var i=0; i<end; i++) {
+		    // if this is a marker for an html block...
+		    while (grafsOut[i].search(/~K(\d+)K/) >= 0) {
+			    var blockText = g_html_blocks[RegExp.$1];
+			    blockText = blockText.replace(/\$/g,"$$$$"); // Escape any dollar signs
+			    grafsOut[i] = grafsOut[i].replace(/~K\d+K/,blockText);
+		    }
+	    }
+    }
 	return grafsOut.join("\n\n");
 }
 

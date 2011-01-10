@@ -484,7 +484,13 @@ var _DoAnchors = function(text) {
 			\(						// literal paren
 			[ \t]*
 			()						// no id, so leave $3 empty
-			<?(.*?)>?				// href = $4
+			<?(                     // href = $4
+                (?:
+                    \([^)]*\)       // allow one level of (correctly nested) parens (think MSDN)
+                    |
+                    [^()]
+                )*?
+            )>?				
 			[ \t]*
 			(						// $5
 				(['"])				// quote char = $6
@@ -496,7 +502,8 @@ var _DoAnchors = function(text) {
 		)
 		/g,writeAnchorTag);
 	*/
-	text = text.replace(/(\[((?:\[[^\]]*\]|[^\[\]])*)\]\([ \t]*()<?(.*?)>?[ \t]*((['"])(.*?)\6[ \t]*)?\))/g,writeAnchorTag);
+    
+	text = text.replace(/(\[((?:\[[^\]]*\]|[^\[\]])*)\]\([ \t]*()<?((?:\([^)]*\)|[^()])*?)>?[ \t]*((['"])(.*?)\6[ \t]*)?\))/g,writeAnchorTag);
 
 	//
 	// Last, handle reference-style shortcuts: [link text]

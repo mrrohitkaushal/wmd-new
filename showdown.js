@@ -184,11 +184,13 @@ var _StripLinkDefinitions = function(text) {
 				  \n?				// maybe *one* newline
 				  [ \t]*
 				<?(\S+?)>?			// url = $2
+                (?=\s|$)            // lookahead for whitespace instead of the lookbehind removed below
 				  [ \t]*
 				  \n?				// maybe one newline
 				  [ \t]*
 				(                   // (potential) title = $3
 				  (\n*)				// any lines skipped = $4 attacklab: lookbehind removed
+                  [ \t]+
 				  ["(]
 				  (.+?)				// title = $5
 				  [")]
@@ -198,7 +200,7 @@ var _StripLinkDefinitions = function(text) {
 			  /gm,
 			  function(){...});
 	*/
-	var text = text.replace(/^[ ]{0,3}\[(.+)\]:[ \t]*\n?[ \t]*<?(\S+?)>?[ \t]*\n?[ \t]*((\n*)["(](.+?)[")][ \t]*)?(?:\n+)/gm,
+	var text = text.replace(/^[ ]{0,3}\[(.+)\]:[ \t]*\n?[ \t]*<?(\S+?)>?(?=\s|$)[ \t]*\n?[ \t]*((\n*)["(](.+?)[")][ \t]*)?(?:\n+)/gm,
 		function (wholeMatch,m1,m2,m3,m4,m5) {
 			m1 = m1.toLowerCase();
 			g_urls.set(m1, _EncodeAmpsAndAngles(m2));  // Link IDs are case-insensitive

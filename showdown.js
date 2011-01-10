@@ -762,9 +762,6 @@ var _DoLists = function(text) {
 			var list = m1;
 			var list_type = (m2.search(/[*+-]/g)>-1) ? "ul" : "ol";
 
-			// Turn double returns into triple returns, so that we can make a
-			// paragraph for the last item in a list, if necessary:
-			list = list.replace(/\n{2,}/g,"\n\n\n");;
 			var result = _ProcessListItems(list, list_type);
 	
 			// Trim any trailing whitespace, to put the closing `</$list_type>`
@@ -782,9 +779,6 @@ var _DoLists = function(text) {
 			var list = m2;
 
 			var list_type = (m3.search(/[*+-]/g)>-1) ? "ul" : "ol";
-			// Turn double returns into triple returns, so that we can make a
-			// paragraph for the last item in a list, if necessary:
-			var list = list.replace(/\n{2,}/g,"\n\n\n");;
 			var result = _ProcessListItems(list, list_type);
 			result = runup + "<"+list_type+">\n" + result + "</"+list_type+">\n";	
 			return result;
@@ -848,25 +842,25 @@ _ProcessListItems = function(list_str, list_type) {
     // with {MARKER} being one of \d+[.] or [*+-], depending on list_type:
 	/*
 		list_str = list_str.replace(/
-			(\n)?							// leading line = $1
-			(^[ \t]*)						// leading whitespace = $2
-			({MARKER}) [ \t]+   			// list marker = $3
-			([^\r]+?						// list item text   = $4
-			(\n{1,2}))
-			(?= \n* (~0 | \2 ({MARKER}) [ \t]+))
+			(^[ \t]*)						// leading whitespace = $1
+			({MARKER}) [ \t]+   			// list marker = $2
+			([^\r]+?						// list item text   = $3
+			(\n+))
+			(?= (~0 | \2 ({MARKER}) [ \t]+))
 		/gm, function(){...});
 	*/
     
     var marker = _listItemMarkers[list_type];
-    var re = new RegExp("(\\n)?(^[ \\t]*)(" + marker + ")[ \\t]+([^\\r]+?(\\n{1,2}))(?=\\n*(~0|\\2(" + marker + ")[ \\t]+))", "gm");
-
+    var re = new RegExp("(^[ \\t]*)(" + marker + ")[ \\t]+([^\\r]+?(\\n+))(?=(~0|\\1(" + marker + ")[ \\t]+))", "gm");
+    var last_item_had_a_double_newline = false;
 	list_str = list_str.replace(re,
-		function(wholeMatch,m1,m2,m3,m4){
-			var item = m4;
-			var leading_line = m1;
-			var leading_space = m2;
-
-			if (leading_line || (item.search(/\n{2,}/)>-1)) {
+		function(wholeMatch,m1,m2,m3){
+			var item = m3;
+			var leading_space = m1;
+            var ends_with_double_newline = /\n\n$/.test(item);
+			var contains_double_newline = ends_with_double_newline || item.search(/\n{2,}/)>-1;
+            
+			if (contains_double_newline || last_item_had_a_double_newline) {
 				item = _RunBlockGamut(_Outdent(item));
 			}
 			else {
@@ -874,8 +868,8 @@ _ProcessListItems = function(list_str, list_type) {
 				item = _DoLists(_Outdent(item));
 				item = item.replace(/\n$/,""); // chomp(item)
 				item = _RunSpanGamut(item);
-			}
-
+            }
+            last_item_had_a_double_newline = ends_with_double_newline;
 			return  "<li>" + item + "</li>\n";
 		}
 	);

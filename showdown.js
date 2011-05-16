@@ -1274,37 +1274,24 @@ var _Outdent = function(text) {
 	return text;
 }
 
-var _Detab = function(text) {
-// attacklab: Detab's completely rewritten for speed.
-// In perl we could fix it by anchoring the regexp with \G.
-// In javascript we're less fortunate.
+var _Detab = function (text) {
+	if (!/\t/.test(text))
+		return text;
 
-	// expand first n-1 tabs
-	text = text.replace(/\t(?=\t)/g,"    "); // attacklab: g_tab_width
+	var spaces = ["    ", "   ", "  ", " "],
+		skew = 0,
+		v;
 
-	// replace the nth with two sentinels
-	text = text.replace(/\t/g,"~A~B");
-
-	// use the sentinel to anchor our regex so it doesn't explode
-	text = text.replace(/~B(.+?)~A/g,
-		function(wholeMatch,m1,m2) {
-			var leadingText = m1;
-			var numSpaces = 4 - leadingText.length % 4;  // attacklab: g_tab_width
-
-			// there *must* be a better way to do this:
-			for (var i=0; i<numSpaces; i++) leadingText+=" ";
-
-			return leadingText;
+	return text.replace(/[\n\t]/g, function (match, offset) {
+		if (match === "\n") {
+			skew = offset + 1;
+			return match;
 		}
-	);
-
-	// clean up sentinels
-	text = text.replace(/~A/g,"    ");  // attacklab: g_tab_width
-	text = text.replace(/~B/g,"");
-
-	return text;
+		v = (offset - skew) % 4;
+		skew = offset + 1;
+		return spaces[v];
+	});
 }
-
 
 //
 //  attacklab: Utility functions

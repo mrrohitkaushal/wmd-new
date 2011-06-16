@@ -309,14 +309,14 @@ var _HashHTMLBlocks = function(text) {
 			\n\n				// Starting after a blank line
 			[ ]{0,3}			// attacklab: g_tab_width - 1
 			<!
-			(--[^\r]*?--\s*)+
+			(--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)    // see http://www.w3.org/TR/html-markup/syntax.html#comments
 			>
 			[ \t]*
 			(?=\n{2,})			// followed by a blank line
 		)
 		/g,hashElement);
 	*/
-	text = text.replace(/(\n\n[ ]{0,3}<!(--[^\r]*?--\s*)+>[ \t]*(?=\n{2,}))/g,hashElement);
+	text = text.replace(/(\n\n[ ]{0,3}<!(--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)>[ \t]*(?=\n{2,}))/g, hashElement);
 
 	// PHP and ASP-style processor instructions (<?...?> and <%...%>)
 
@@ -423,8 +423,11 @@ var _EscapeSpecialCharsWithinTagAttributes = function(text) {
 //
 
 	// Build a regex to find HTML tags and comments.  See Friedl's 
-	// "Mastering Regular Expressions", 2nd Ed., pp. 200-201.
-	var regex = /(<[a-z\/!$]("[^"]*"|'[^']*'|[^'">])*>|<!(--.*?--\s*)+>)/gi;
+    // "Mastering Regular Expressions", 2nd Ed., pp. 200-201.
+    
+    // SE: changed the comment part of the regex
+
+    var regex = /(<[a-z\/!$]("[^"]*"|'[^']*'|[^'">])*>|<!(--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)>)/gi;
 
 	text = text.replace(regex, function(wholeMatch) {
 		var tag = wholeMatch.replace(/(.)<\/?code>(?=.)/g,"$1`");

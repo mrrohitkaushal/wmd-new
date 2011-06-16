@@ -221,8 +221,6 @@ var _StripLinkDefinitions = function(text) {
 }
 
 var _HashHTMLBlocks = function(text) {
-	// attacklab: Double up blank lines to reduce lookaround
-	text = text.replace(/\n/g,"\n\n");
 
 	// Hashify HTML blocks:
 	// We only want to do this for block-level HTML tags, such as headers,
@@ -287,9 +285,9 @@ var _HashHTMLBlocks = function(text) {
 
 	/*
 		text = text.replace(/
+		\n				    // Starting after a blank line
+		[ ]{0,3}
 		(						// save in $1
-			\n\n				// Starting after a blank line
-			[ ]{0,3}
 			(<(hr)				// start tag = $2
 			\b					// word break
 			([^<>])*?			// 
@@ -299,15 +297,15 @@ var _HashHTMLBlocks = function(text) {
 		)
 		/g,hashElement);
 	*/
-	text = text.replace(/(\n[ ]{0,3}(<(hr)\b([^<>])*?\/?>)[ \t]*(?=\n{2,}))/g,hashElement);
+	text = text.replace(/\n[ ]{0,3}((<(hr)\b([^<>])*?\/?>)[ \t]*(?=\n{2,}))/g,hashElement);
 
 	// Special case for standalone HTML comments:
 
 	/*
 		text = text.replace(/
+		\n\n				// Starting after a blank line
+		[ ]{0,3}			// attacklab: g_tab_width - 1
 		(						// save in $1
-			\n\n				// Starting after a blank line
-			[ ]{0,3}			// attacklab: g_tab_width - 1
 			<!
 			(--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)    // see http://www.w3.org/TR/html-markup/syntax.html#comments
 			>
@@ -316,7 +314,7 @@ var _HashHTMLBlocks = function(text) {
 		)
 		/g,hashElement);
 	*/
-	text = text.replace(/(\n\n[ ]{0,3}<!(--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)>[ \t]*(?=\n{2,}))/g, hashElement);
+	text = text.replace(/\n\n[ ]{0,3}(<!(--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)>[ \t]*(?=\n{2,}))/g, hashElement);
 
 	// PHP and ASP-style processor instructions (<?...?> and <%...%>)
 
@@ -339,8 +337,6 @@ var _HashHTMLBlocks = function(text) {
 	*/
 	text = text.replace(/(?:\n\n)([ ]{0,3}(?:<([?%])[^\r]*?\2>)[ \t]*(?=\n{2,}))/g,hashElement);
 
-	// attacklab: Undo double lines (see comment at top of this function)
-	text = text.replace(/\n\n/g,"\n");
 	return text;
 }
 
@@ -348,8 +344,7 @@ var hashElement = function(wholeMatch,m1) {
 	var blockText = m1;
 
 	// Undo double lines
-	blockText = blockText.replace(/\n\n/g,"\n");
-	blockText = blockText.replace(/^\n/,"");
+	blockText = blockText.replace(/^\n+/,"");
 	
 	// strip trailing blank lines
 	blockText = blockText.replace(/\n+$/g,"");
@@ -690,10 +685,10 @@ var _DoHeaders = function(text) {
 	//	--------
 	//
 	text = text.replace(/^(.+)[ \t]*\n=+[ \t]*\n+/gm,
-		function(wholeMatch,m1){return hashBlock("<h1>" + _RunSpanGamut(m1) + "</h1>");});
+		function(wholeMatch,m1){return "<h1>" + _RunSpanGamut(m1) + "</h1>";});
 
 	text = text.replace(/^(.+)[ \t]*\n-+[ \t]*\n+/gm,
-		function(matchFound,m1){return hashBlock("<h2>" + _RunSpanGamut(m1) + "</h2>");});
+		function(matchFound,m1){return "<h2>" + _RunSpanGamut(m1) + "</h2>";});
 
 	// atx-style headers:
 	//  # Header 1
@@ -717,7 +712,7 @@ var _DoHeaders = function(text) {
 	text = text.replace(/^(\#{1,6})[ \t]*(.+?)[ \t]*\#*\n+/gm,
 		function(wholeMatch,m1,m2) {
 			var h_level = m1.length;
-			return hashBlock("<h" + h_level + ">" + _RunSpanGamut(m2) + "</h" + h_level + ">");
+			return "<h" + h_level + ">" + _RunSpanGamut(m2) + "</h" + h_level + ">";
 		});
 
 	return text;
@@ -918,7 +913,7 @@ var _DoCodeBlocks = function(text) {
 
 			codeblock = "<pre><code>" + codeblock + "\n</code></pre>";
 
-			return hashBlock(codeblock) + nextChar;
+			return "\n\n" + codeblock + "\n\n" + nextChar;
 		}
 	);
 
